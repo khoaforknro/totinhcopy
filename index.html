@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Love Countdown 3D - Personal Edition</title>
+    <!-- Google Fonts cho hiệu ứng chữ nghệ thuật -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@600;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Thư viện React & ThreeJS từ CDN để chạy độc lập không cần build phức tạp -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Nhúng CSS Tailwind v4 thu gọn vào đây -->
+    <style>
+        *, ::after, ::before { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: #000; overflow: hidden; font-family: 'Roboto', sans-serif; -webkit-user-select: none; user-select: none; }
+        canvas { display: block; }
+        /* CSS Vá lỗi khoảng cách space-x của Tailwind v4 */
+        :where(.space-x-3>:not(:last-child)) {
+            --tw-space-x-reverse: 0;
+            margin-inline-start: calc(12px * var(--tw-space-x-reverse));
+            margin-inline-end: calc(12px * calc(1 - var(--tw-space-x-reverse)));
+        }
+        /* Hiệu ứng xoay màn hình nếu xem trên điện thoại dọc */
+        #rotate-notice {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #111; color: white; display: none;
+            justify-content: center; align-items: center; z-index: 9999;
+            text-align: center; padding: 20px;
+        }
+        @media (max-width: 768px) and (orientation: portrait) {
+            /* Mày có thể bật cái này nếu muốn ép người dùng xoay ngang màn hình để xem 3D */
+            /* #rotate-notice { display: flex; } */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="rotate-notice">
+        <div>
+            <h2>Vui lòng xoay ngang điện thoại 🔄</h2>
+            <p>Trải nghiệm không gian 3D tốt nhất ở chế độ màn hình ngang.</p>
+        </div>
+    </div>
+
+    <!-- Nơi React App sẽ render -->
+    <div id="root"></div>
+
+    <!-- Nhúng file Logic đã gộp ở bước 2 -->
+    <type="text/babel" src="app.js"></script>
+</body>
+</html>
