@@ -4,54 +4,249 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Love Countdown 3D - Personal Edition</title>
-    <!-- Google Fonts cho hiệu ứng chữ nghệ thuật -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mali:wght@600;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Thư viện React & ThreeJS từ CDN để chạy độc lập không cần build phức tạp -->
+    <!-- React & Babel Core -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Nhúng CSS Tailwind v4 thu gọn vào đây -->
     <style>
         *, ::after, ::before { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: #000; overflow: hidden; font-family: 'Roboto', sans-serif; -webkit-user-select: none; user-select: none; }
         canvas { display: block; }
-        /* CSS Vá lỗi khoảng cách space-x của Tailwind v4 */
         :where(.space-x-3>:not(:last-child)) {
             --tw-space-x-reverse: 0;
             margin-inline-start: calc(12px * var(--tw-space-x-reverse));
             margin-inline-end: calc(12px * calc(1 - var(--tw-space-x-reverse)));
         }
-        /* Hiệu ứng xoay màn hình nếu xem trên điện thoại dọc */
-        #rotate-notice {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #111; color: white; display: none;
-            justify-content: center; align-items: center; z-index: 9999;
-            text-align: center; padding: 20px;
-        }
-        @media (max-width: 768px) and (orientation: portrait) {
-            /* Mày có thể bật cái này nếu muốn ép người dùng xoay ngang màn hình để xem 3D */
-            /* #rotate-notice { display: flex; } */
-        }
     </style>
 </head>
 <body>
 
-    <div id="rotate-notice">
-        <div>
-            <h2>Vui lòng xoay ngang điện thoại 🔄</h2>
-            <p>Trải nghiệm không gian 3D tốt nhất ở chế độ màn hình ngang.</p>
-        </div>
-    </div>
-
-    <!-- Nơi React App sẽ render -->
     <div id="root"></div>
 
-    <!-- Nhúng file Logic đã gộp ở bước 2 -->
-    <type="text/babel" src="app.js"></script>
+    <!-- Nhét thẳng toàn bộ logic vào đây nè mày -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef, Fragment } = React;
+
+        // --- MOCK CONFIG DATA (Sửa nội dung của mày ở đây) ---
+        const CONFIG = {
+            music: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", 
+            backgroundColor: "#ffa3e0",
+            backgroundText: "LOVE YOU FOREVER ", 
+            textColor: { r: 255, g: 105, b: 180 },
+            finalText: "Anh Yêu Em! ❤️\nChúc chúng mình mãi hạnh phúc nhé!"
+        };
+
+        // --- COMPONENT 1: MATRIX BACKGROUND TEXT ---
+        const MatrixBackground = ({ text, color }) => {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext("2d");
+                const dpr = window.devicePixelRatio || 1;
+                
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                canvas.width = w * dpr;
+                canvas.height = h * dpr;
+                canvas.style.width = `${w}px`;
+                canvas.style.height = `${h}px`;
+                ctx.scale(dpr, dpr);
+
+                const fontSize = 16;
+                const columns = Math.floor(w / 10);
+                const drops = Array.from({ length: columns }, () => Math.floor(Math.random() * (h / fontSize)));
+                const textIndices = Array.from({ length: columns }, () => Math.floor(Math.random() * text.length));
+
+                const draw = () => {
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.fillStyle = color;
+                    ctx.font = `${fontSize}px 'Roboto', Arial, sans-serif`;
+
+                    for (let i = 0; i < columns; i++) {
+                        const char = text[textIndices[i] % text.length];
+                        ctx.fillText(char, i * 14, drops[i] * fontSize);
+                        drops[i]++;
+                        textIndices[i]++;
+
+                        if (drops[i] * fontSize > h && Math.random() > 0.975) {
+                            drops[i] = 0;
+                        }
+                    }
+                };
+                
+                const interval = setInterval(draw, 33);
+                
+                const handleResize = () => {
+                    const nw = window.innerWidth;
+                    const nh = window.innerHeight;
+                    canvas.width = nw * dpr;
+                    canvas.height = nh * dpr;
+                    canvas.style.width = `${nw}px`;
+                    canvas.style.height = `${nh}px`;
+                    ctx.scale(dpr, dpr);
+                };
+                
+                window.addEventListener("resize", handleResize);
+                return () => {
+                    clearInterval(interval);
+                    window.removeEventListener("resize", handleResize);
+                };
+            }, [text, color]);
+
+            return <canvas ref={canvasRef} style={{ position: "fixed", top: 0, left: 0, zIndex: -1, backgroundColor: "black" }} />;
+        };
+
+        // --- COMPONENT 2: MATHEMATICAL HEART BLOOM EFFECT ---
+        const HeartBloomEffect = ({ text, rgbColor }) => {
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext("2d");
+                let w = window.innerWidth;
+                let h = window.innerHeight;
+                canvas.width = w;
+                canvas.height = h;
+
+                const getHeartPoint = (angle) => {
+                    const scale = Math.max(10, Math.min(Math.min(w, h) / 40, 22));
+                    const x = 16 * Math.pow(Math.sin(angle), 3);
+                    const y = 13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle);
+                    return {
+                        x: w / 2 + x * scale,
+                        y: h / 2 - y * scale - h * 0.05
+                    };
+                };
+
+                let particles = [];
+                const renderLoop = () => {
+                    ctx.clearRect(0, 0, w, h);
+                    
+                    if (particles.length < 150) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const pt = getHeartPoint(angle);
+                        particles.push({
+                            x: pt.x, y: pt.y,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            alpha: 1,
+                            scale: 0.05 + Math.random() * 0.12
+                        });
+                    }
+
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.alpha -= 0.006;
+                    });
+                    particles = particles.filter(p => p.alpha > 0);
+
+                    particles.forEach(p => {
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.scale(p.scale, p.scale);
+                        ctx.beginPath();
+                        ctx.moveTo(0, -30);
+                        ctx.bezierCurveTo(25, -60, 60, -30, 0, 30);
+                        ctx.bezierCurveTo(-60, -30, -25, -60, 0, -30);
+                        ctx.fillStyle = `rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, ${p.alpha})`;
+                        ctx.fill();
+                        ctx.restore();
+                    });
+
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = "white";
+                    ctx.font = `bold ${Math.max(18, Math.min(w, h) * 0.045)}px 'Mali', sans-serif`;
+                    
+                    const lines = text.split('\n');
+                    lines.forEach((line, idx) => {
+                        ctx.fillText(line, w / 2, h / 2 + (idx - (lines.length - 1) / 2) * 35);
+                    });
+
+                    requestAnimationFrame(renderLoop);
+                };
+
+                renderLoop();
+                const handleResize = () => {
+                    w = window.innerWidth; h = window.innerHeight;
+                    canvas.width = w; canvas.height = h;
+                };
+                window.addEventListener("resize", handleResize);
+                return () => window.removeEventListener("resize", handleResize);
+            }, [text, rgbColor]);
+
+            return <canvas ref={canvasRef} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", zIndex: 10, pointerEvents: "none" }} />;
+        };
+
+        // --- COMPONENT 3: COUNTDOWN SPACE ---
+        const CountdownSpace = ({ onComplete }) => {
+            const [timeLeft, setTimeLeft] = useState({ ngày: 0, giờ: 0, phút: 0, giây: 5 }); // Đóng tạm 5 giây để test nổ tim cho lẹ
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev.giây > 0) return { ...prev, giây: prev.giây - 1 };
+                        clearInterval(timer);
+                        onComplete();
+                        return prev;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }, [onComplete]);
+
+            return (
+                <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", zIndex: 5, color: "white" }}>
+                    <h1 style={{ fontFamily: "'Mali'", fontSize: "2rem", marginBottom: "20px", textShadow: "0 0 10px #ff3366", textAlign: "center", padding: "0 10px" }}>Đếm ngược ngày chung đôi ❤️</h1>
+                    <div style={{ display: "flex", gap: "15px" }}>
+                        {Object.entries(timeLeft).map(([unit, val]) => (
+                            <div key={unit} style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)", padding: "15px", borderRadius: "12px", minWidth: "75px", textAlign: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
+                                <span style={{ fontSize: "2.2rem", display: "block", fontWeight: "bold" }}>{val}</span>
+                                <span style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "#ccc" }}>{unit}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <p style={{ marginTop: "20px", color: "rgba(255,255,255,0.6)", fontSize: "0.9rem" }}>Bấm vào màn hình nếu chưa nghe nhạc nha</p>
+                </div>
+            );
+        };
+
+        // --- MAIN APPLICATION COMPONENT ---
+        function App() {
+            const [isCompleted, setIsCompleted] = useState(false);
+            const audioRef = useRef(null);
+
+            useEffect(() => {
+                const startAudio = () => {
+                    if (audioRef.current) audioRef.current.play().catch(() => {});
+                };
+                document.addEventListener("click", startAudio);
+                return () => document.removeEventListener("click", startAudio);
+            }, []);
+
+            return (
+                <Fragment>
+                    <audio ref={audioRef} loop src={CONFIG.music} />
+                    <MatrixBackground text={CONFIG.backgroundText} color={CONFIG.backgroundColor} />
+                    {!isCompleted ? (
+                        <CountdownSpace onComplete={() => setIsCompleted(true)} />
+                    ) : (
+                        <HeartBloomEffect text={CONFIG.finalText} rgbColor={CONFIG.textColor} />
+                    )}
+                </Fragment>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<App />);
+    </script>
 </body>
 </html>
